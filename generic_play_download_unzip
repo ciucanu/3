@@ -1,0 +1,56 @@
+# inventory
+
+[webservers]
+server1
+server2
+server3
+# ... add remaining hosts here
+
+
+
+
+
+
+
+#variables file:
+
+downloads:
+  - hostname: server1
+    url: https://example.com/file1.txt
+    dest: /path/to/file1.txt
+    # Set unzip to true if needed
+    unzip: false
+  - hostname: server2
+    url: https://example.com/file2.zip
+    dest: /path/to/file2.zip
+    unzip: true
+  - hostname: server3
+    url: https://example.com/file3.pdf
+    dest: /path/to/file3.pdf
+    unzip: false
+  # ... add configurations for other nodes
+
+
+
+
+
+
+
+#playbook:
+
+
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Download file for {{ item.hostname }}
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+      loop: "{{ downloads }}"
+    - name: Unzip file (if needed)
+      archive:
+        path: "{{ item.dest }}"
+        extract: yes
+      when: item.unzip == true
+      loop: "{{ downloads }}"
