@@ -52,6 +52,12 @@ w0:
       when: inventory_hostname == item.hostname
       with_items: "{{ groups['servers'] }}"
 
+    - name: Unzip specific archive 
+      unarchive:
+        src: "{{ download_dir }}/zgf...zip"  
+        dest: "{{ download_dir }}"
+        remove: true  
+
   tasks:
     - name: Restart service
       service:
