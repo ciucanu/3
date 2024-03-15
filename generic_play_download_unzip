@@ -1,43 +1,28 @@
-# inventory
+### inventory
 
 [webservers]
 server1
 server2
 server3
-# ... add remaining hosts here
 
 
 
-
-
-
-
-#variables file:
+### variables
 
 downloads:
   - hostname: server1
     url: https://example.com/file1.txt
     dest: /path/to/file1.txt
-    # Set unzip to true if needed
-    unzip: false
   - hostname: server2
-    url: https://example.com/file2.zip
+    url: https://example.com/file2.zip  # This URL has the .zip extension
     dest: /path/to/file2.zip
-    unzip: true
   - hostname: server3
     url: https://example.com/file3.pdf
     dest: /path/to/file3.pdf
-    unzip: false
-  # ... add configurations for other nodes
 
 
 
-
-
-
-
-#playbook:
-
+### platbook
 
 ---
 - hosts: all
@@ -48,9 +33,11 @@ downloads:
         url: "{{ item.url }}"
         dest: "{{ item.dest }}"
       loop: "{{ downloads }}"
-    - name: Unzip file (if needed)
+
+    - name: Extract file if URL ends with .zip
       archive:
-        path: "{{ item.dest }}"
+        remote_src: yes
+        src: "{{ item.url }}"
         extract: yes
-      when: item.unzip == true
+      when: item.url.endswith('.zip')
       loop: "{{ downloads }}"
