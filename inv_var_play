@@ -1,0 +1,59 @@
+DOWNLOAD_URL: url........
+DOWNLOAD_DIR: /path/to/downloaded/files
+
+
+
+[servers]
+i0
+a0
+w0
+
+
+i0:
+  copy_dst: base_path_/resources/default/engipes/{{ engine_filename }}
+  owner: user_with_write_access
+  group: group_with_write_access
+
+a0:
+  copy_dst: base_path_/resources/default/engipes/{{ engine_filename }}
+  owner: user_with_write_access
+  group: group_with_write_access
+
+w0:
+  copy_dst: base_path_/resources/default/engipes/{{ engine_filename }}
+  owner: group_with_write_access 
+  group: group_with_write_access
+
+
+
+
+
+
+---
+- name: Update files and restart services
+  hosts: "{{ groups['servers'] }}"
+  become: true
+  vars:
+    download_url: "{{ lookup('env', 'DOWNLOAD_URL') }}"
+    engine_filename: "ki engine...."
+
+  tasks:
+    - name: Download engine file
+      get_url:
+        url: "{{ download_url }}"
+        dest: "{{ lookup('env', 'DOWNLOAD_DIR') }}"
+
+    - name: Update engine file on specific server
+      copy:
+        src: "{{ lookup('env', 'DOWNLOAD_DIR') }}/{{ engine_filename }}"
+        dest: "{{ hostvars[inventory_hostname]['copy_dst'] }}"
+        owner: "{{ hostvars[inventory_hostname]['owner'] }}"
+        group: "{{ hostvars[inventory_hostname]['group'] }}"
+      when: inventory_hostname == item.hostname
+      with_items: "{{ groups['servers'] }}"
+
+  tasks:
+    - name: Restart service
+      service:
+        name: synthd
+        state: restarted
