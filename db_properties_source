@@ -1,0 +1,7 @@
+load db info from the externally managed var / properties file:
+
+
+dbname=$(grep '^dbname=' var1.txt | cut -d= -f2)
+hostname=$(grep '^hostname=' var1.txt | cut -d= -f2)
+
+
