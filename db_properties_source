@@ -5,3 +5,12 @@ dbname=$(grep '^dbname=' var1.txt | cut -d= -f2)
 hostname=$(grep '^hostname=' var1.txt | cut -d= -f2)
 
 
+
+
+
+
+while IFS=':' read -r dbname sql_file
+do
+  # Connect to Postgres using psql
+  psql -h <host> -p <port> -U <username> -d "$dbname" -f "$sql_file" > output_$dbname.txt 2>&1  
+done < dbnames.txt  # 
