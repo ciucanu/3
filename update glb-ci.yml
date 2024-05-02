@@ -1,6 +1,5 @@
 import os
 import yaml
-from collections import OrderedDict
 
 # Directory where your projects are located
 projects_directory = "/path/to/projects"
@@ -15,12 +14,9 @@ variables:
   nexus_iq_scan_path: .
   nexus_scan_stage: release
 
-stages: 
+stages:
   - nexusiq-scan
 """
-
-# Parse the content to add into a YAML object
-content_to_add_parsed = yaml.safe_load(content_to_add)
 
 # Iterate through each project directory
 for project_dir in os.listdir(projects_directory):
@@ -30,45 +26,21 @@ for project_dir in os.listdir(projects_directory):
     # Check if .gitlab-ci.yml exists in the project directory
     if os.path.isfile(gitlab_ci_file):
         with open(gitlab_ci_file, 'r') as file:
-            try:
-                ci_content = yaml.safe_load(file)
-            except yaml.YAMLError as exc:
-                print(f"Error reading YAML file in project {project_dir}: {exc}")
-                continue
+            original_content = file.read()
 
-            # Convert to OrderedDict to preserve order
-            ci_content = OrderedDict(ci_content)
+        # Find the last index of "---" to ensure appending the new content at the end
+        last_separator_index = original_content.rfind('---')
 
-            # Check if 'variables' block exists and update it
-            if 'variables' in ci_content:
-                ci_content['variables'].update(content_to_add_parsed['variables'])
-            else:
-                ci_content['variables'] = content_to_add_parsed['variables']
-
-            # Check if 'stages' block exists and update it
-            if 'stages' in ci_content:
-                ci_content['stages'].extend(content_to_add_parsed['stages'])
-            else:
-                ci_content['stages'] = content_to_add_parsed['stages']
-
-            # Check if 'include' block exists and update it
-            if 'include' in ci_content:
-                include_content = ci_content['include']
-                # Ensure include_content is a list
-                if not isinstance(include_content, list):
-                    include_content = [include_content]
-                # Extend include_content with new items
-                for new_item in content_to_add_parsed['include']:
-                    if new_item not in include_content:
-                        include_content.append(new_item)
-                # Update 'include' block in ci_content
-                ci_content['include'] = include_content
-            else:
-                ci_content['include'] = content_to_add_parsed['include']
+        # If there's no "---", we assume it's an empty YAML file
+        if last_separator_index == -1:
+            updated_content = original_content.strip() + '\n' + content_to_add.strip()
+        else:
+            # Insert the new content after the last "---"
+            updated_content = original_content[:last_separator_index].strip() + '\n' + content_to_add.strip() + '\n' + original_content[last_separator_index:].strip()
 
         # Write updated content back to the .gitlab-ci.yml file
         with open(gitlab_ci_file, 'w') as file:
-            yaml.dump(ci_content, file)
+            file.write(updated_content)
             print(f"Updated .gitlab-ci.yml in project {project_dir}")
     else:
         print(f".gitlab-ci.yml not found in project {project_dir}")
