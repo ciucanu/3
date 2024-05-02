@@ -31,11 +31,19 @@ for project_dir in os.listdir(projects_directory):
         # Parse the existing YAML content
         existing_content = yaml.safe_load(original_content)
 
+        # Parse the content to add
+        content_to_add_parsed = yaml.safe_load(content_to_add)
+
         # Update existing blocks or add them if they don't exist
-        for block_name, block_content in yaml.safe_load(content_to_add).items():
+        for block_name, block_content in content_to_add_parsed.items():
             if block_name in existing_content:
-                # Update existing block
-                existing_content[block_name].update(block_content)
+                # Check if the block is a list
+                if isinstance(existing_content[block_name], list):
+                    # Extend the existing list with the new items
+                    existing_content[block_name].extend(block_content)
+                else:
+                    # If it's not a list, treat it as a dictionary and update it
+                    existing_content[block_name].update(block_content)
             else:
                 # Add new block
                 existing_content[block_name] = block_content
