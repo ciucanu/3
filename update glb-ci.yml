@@ -31,7 +31,10 @@ for project_dir in os.listdir(projects_directory):
     if os.path.isfile(gitlab_ci_file):
         with open(gitlab_ci_file, 'r+') as file:
             try:
-                ci_content = yaml.safe_load(file, Loader=yaml.Loader)
+                # Load the YAML content with OrderedDict to preserve the order of keys
+                ci_content = yaml.safe_load(file, Loader=yaml.SafeLoader)
+                if ci_content is None:
+                    ci_content = OrderedDict()
             except yaml.YAMLError as exc:
                 print(f"Error reading YAML file in project {project_dir}: {exc}")
                 continue
