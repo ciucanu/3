@@ -19,6 +19,9 @@ stages:
   - nexusiq-scan
 """
 
+# Parse the content to add into a YAML object
+content_to_add_parsed = yaml.safe_load(content_to_add)
+
 # Iterate through each project directory
 for project_dir in os.listdir(projects_directory):
     project_path = os.path.join(projects_directory, project_dir)
@@ -38,27 +41,31 @@ for project_dir in os.listdir(projects_directory):
 
             # Check if 'variables' block exists and update it
             if 'variables' in ci_content:
-                ci_content['variables'].update(yaml.safe_load(content_to_add)['variables'])
+                ci_content['variables'].update(content_to_add_parsed['variables'])
             else:
-                ci_content['variables'] = yaml.safe_load(content_to_add)['variables']
+                ci_content['variables'] = content_to_add_parsed['variables']
 
             # Check if 'stages' block exists and update it
             if 'stages' in ci_content:
-                ci_content['stages'].extend(yaml.safe_load(content_to_add)['stages'])
+                ci_content['stages'].extend(content_to_add_parsed['stages'])
             else:
-                ci_content['stages'] = yaml.safe_load(content_to_add)['stages']
+                ci_content['stages'] = content_to_add_parsed['stages']
 
             # Check if 'include' block exists and update it
             if 'include' in ci_content:
-                include_content = ci_content.get('include', [])
-                if not isinstance(include_content, list):
-                    include_content = [include_content]  # Convert to list if not already
-                include_content.extend(yaml.safe_load(content_to_add)['include'])
-                # Remove duplicates by converting to set and back to list
-                include_content = list(OrderedDict.fromkeys(include_content))
+                include_content = ci_content['include']
+                # Check if the include_content is a list
+                if isinstance(include_content, list):
+                    # If it's a list, extend it with the new content
+                    include_content.extend(content_to_add_parsed['include'])
+                else:
+                    # If it's not a list, make it a list and then extend it
+                    include_content = [include_content]
+                    include_content.extend(content_to_add_parsed['include'])
+                # Update the 'include' block in ci_content
                 ci_content['include'] = include_content
             else:
-                ci_content['include'] = yaml.safe_load(content_to_add)['include']
+                ci_content['include'] = content_to_add_parsed['include']
 
         # Write updated content back to the .gitlab-ci.yml file
         with open(gitlab_ci_file, 'w') as file:
