@@ -31,8 +31,8 @@ for project_dir in os.listdir(projects_directory):
     if os.path.isfile(gitlab_ci_file):
         with open(gitlab_ci_file, 'r+') as file:
             try:
-                # Load the YAML content with OrderedDict to preserve the order of keys
-                ci_content = yaml.safe_load(file, Loader=yaml.SafeLoader)
+                # Load the YAML content as an OrderedDict to preserve the order of keys
+                ci_content = yaml.safe_load(file)
                 if ci_content is None:
                     ci_content = OrderedDict()
             except yaml.YAMLError as exc:
