@@ -48,7 +48,7 @@ for project_dir in os.listdir(projects_directory):
                 # Add new block
                 existing_content[block_name] = block_content
 
-        # Convert the updated content back to YAML
+        # Convert the updated content back to YAML with original indentation
         updated_content = yaml.dump(existing_content, default_flow_style=False)
 
         # Write updated content back to the .gitlab-ci.yml file
