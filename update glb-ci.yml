@@ -38,7 +38,7 @@ for project_dir in os.listdir(projects_directory):
             
             # Update each block
             for block in blocks_to_update:
-                if block in ci_content:
+                if isinstance(ci_content.get(block), dict):
                     new_block_content = yaml.safe_load(content_to_add)[block]
                     # Check if the content already exists before appending
                     for key, value in new_block_content.items():
