@@ -60,9 +60,16 @@ for project_dir in os.listdir(projects_directory):
                 # Extend include_content with new items
                 include_content.extend(content_to_add_parsed['include'])
                 # Remove duplicates
-                include_content = list(OrderedDict.fromkeys(include_content))
+                unique_include_content = []
+                seen = set()
+                for item in include_content:
+                    # Convert dictionary to tuple to make it hashable
+                    item_tuple = tuple(item.items())
+                    if item_tuple not in seen:
+                        unique_include_content.append(item)
+                        seen.add(item_tuple)
                 # Update 'include' block in ci_content
-                ci_content['include'] = include_content
+                ci_content['include'] = unique_include_content
             else:
                 ci_content['include'] = content_to_add_parsed['include']
 
