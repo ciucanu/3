@@ -50,7 +50,9 @@ for project_dir in os.listdir(projects_directory):
 
             # Check if 'include' block exists and update it
             if 'include' in ci_content:
-                include_content = ci_content['include']
+                include_content = ci_content.get('include', [])
+                if not isinstance(include_content, list):
+                    include_content = [include_content]  # Convert to list if not already
                 include_content.extend(yaml.safe_load(content_to_add)['include'])
                 # Remove duplicates by converting to set and back to list
                 include_content = list(OrderedDict.fromkeys(include_content))
