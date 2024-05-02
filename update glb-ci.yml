@@ -42,12 +42,12 @@ for project_dir in os.listdir(projects_directory):
             # Update each block
             for block in blocks_to_update:
                 new_block_content = yaml.safe_load(content_to_add)[block]
-                existing_block = ci_content.get(block, OrderedDict())
+                existing_block = ci_content.get(block, [])
                 
                 # Merge new_block_content into existing_block
                 for item in new_block_content:
                     if item not in existing_block:
-                        existing_block[item] = new_block_content[item]
+                        existing_block.append(item)
                 
                 ci_content[block] = existing_block
 
