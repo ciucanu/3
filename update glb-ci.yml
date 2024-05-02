@@ -1,0 +1,58 @@
+import os
+import yaml
+
+# Directory where your projects are located
+projects_directory = "/path/to/projects"
+
+# Content to add inside existing blocks
+content_to_add = """
+include:
+  - project: zzz
+    file: zzz
+
+variables:
+  nexus_iq_scan_path: .
+  nexus_scan_stage: release
+
+stages: 
+  - nexusiq-scan
+"""
+
+# Iterate through each project directory
+for project_dir in os.listdir(projects_directory):
+    project_path = os.path.join(projects_directory, project_dir)
+    gitlab_ci_file = os.path.join(project_path, ".gitlab-ci.yml")
+
+    # Check if .gitlab-ci.yml exists in the project directory
+    if os.path.isfile(gitlab_ci_file):
+        with open(gitlab_ci_file, 'r') as file:
+            try:
+                ci_content = yaml.safe_load(file)
+            except yaml.YAMLError as exc:
+                print(f"Error reading YAML file in project {project_dir}: {exc}")
+                continue
+            
+            # Check if 'variables' block exists and update it
+            if 'variables' in ci_content:
+                ci_content['variables'].update(yaml.safe_load(content_to_add)['variables'])
+            else:
+                ci_content['variables'] = yaml.safe_load(content_to_add)['variables']
+
+            # Check if 'stages' block exists and update it
+            if 'stages' in ci_content:
+                ci_content['stages'].extend(yaml.safe_load(content_to_add)['stages'])
+            else:
+                ci_content['stages'] = yaml.safe_load(content_to_add)['stages']
+
+            # Check if 'include' block exists and update it
+            if 'include' in ci_content:
+                ci_content['include'].extend(yaml.safe_load(content_to_add)['include'])
+            else:
+                ci_content['include'] = yaml.safe_load(content_to_add)['include']
+
+        # Write updated content back to the .gitlab-ci.yml file
+        with open(gitlab_ci_file, 'w') as file:
+            yaml.dump(ci_content, file)
+            print(f"Updated .gitlab-ci.yml in project {project_dir}")
+    else:
+        print(f".gitlab-ci.yml not found in project {project_dir}")
