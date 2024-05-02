@@ -31,21 +31,20 @@ for project_dir in os.listdir(projects_directory):
     if os.path.isfile(gitlab_ci_file):
         with open(gitlab_ci_file, 'r+') as file:
             try:
-                ci_content = yaml.safe_load(file)
+                ci_content = yaml.safe_load(file, Loader=yaml.Loader)
             except yaml.YAMLError as exc:
                 print(f"Error reading YAML file in project {project_dir}: {exc}")
                 continue
             
             # Update each block
             for block in blocks_to_update:
-                if isinstance(ci_content.get(block), dict):
-                    new_block_content = yaml.safe_load(content_to_add)[block]
-                    # Check if the content already exists before appending
-                    for key, value in new_block_content.items():
-                        if key not in ci_content[block]:
-                            ci_content[block][key] = value
-                else:
-                    ci_content[block] = yaml.safe_load(content_to_add)[block]
+                new_block_content = yaml.safe_load(content_to_add)[block]
+                existing_block = ci_content.get(block, OrderedDict())
+                
+                for key, value in new_block_content.items():
+                    existing_block[key] = value
+                
+                ci_content[block] = existing_block
 
             # Reset file pointer to beginning and truncate the file
             file.seek(0)
