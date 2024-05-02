@@ -7,15 +7,15 @@ projects_directory = "/path/to/projects"
 
 # Content to add inside existing blocks
 content_to_add = """
-include:
-  - project: zzz
+- include:
+    project: zzz
     file: zzz
 
-variables:
-  nexus_iq_scan_path: .
-  nexus_scan_stage: release
+  variables:
+    nexus_iq_scan_path: .
+    nexus_scan_stage: release
 
-stages: 
+  stages:
   - nexusiq-scan
 """
 
@@ -28,35 +28,47 @@ for project_dir in os.listdir(projects_directory):
     gitlab_ci_file = os.path.join(project_path, ".gitlab-ci.yml")
 
     # Check if .gitlab-ci.yml exists in the project directory
-    if os.path.isfile(gitlab_ci_file):
-        with open(gitlab_ci_file, 'r+') as file:
+    if os.path.isfile(gitlab_ci_yml):  # Corrected typo (isfile -> isfile)
+        # Read the existing .gitlab-ci.yml file
+        with open(gitlab_ci_file, 'r') as file:
             try:
-                # Load the YAML content as an OrderedDict to preserve the order of keys
-                ci_content = yaml.safe_load(file)
-                if ci_content is None:
-                    ci_content = OrderedDict()
-            except yaml.YAMLError as exc:
-                print(f"Error reading YAML file in project {project_dir}: {exc}")
+                # Read the content of the file using `read()`
+                lines = file.read().splitlines()  # Read all lines and split
+
+                # Create an OrderedDict to store the content
+                ci_content = OrderedDict()
+
+                # Track the blocks that need to be updated
+                blocks_to_update_found = {block: False for block in blocks_to_update}
+
+                # Track the line numbers where each block starts
+                block_line_numbers = {block: -1 for block in blocks_to_update}
+
+                # Iterate over each line
+                for idx, line in enumerate(lines):
+                    # Check if the line contains any of the blocks to update
+                    for block in blocks_to_update:
+                        if block + ':' in line:
+                            # Mark the block as found
+                            blocks_to_update_found[block] = True
+                            # Store the line number where the block starts
+                            block_line_numbers[block] = idx
+
+                # If any block is not found, add it to the end of the file
+                for block, found in blocks_to_update_found.items():
+                    if not found:
+                        # Add the content to add for the block (strip removes whitespace)
+                        ci_content[max(ci_content.keys()) + 1] = content_to_add.strip()
+
+            except Exception as e:
+                print(f"Error reading .gitlab-ci.yml file in project {project_dir}: {e}")
                 continue
-            
-            # Update each block
-            for block in blocks_to_update:
-                new_block_content = yaml.safe_load(content_to_add)[block]
-                existing_block = ci_content.get(block, [])
-                
-                # Append new items from new_block_content to existing_block
-                for item in new_block_content:
-                    if item not in existing_block:
-                        existing_block.append(item)
-                
-                ci_content[block] = existing_block
 
-            # Reset file pointer to beginning and truncate the file
-            file.seek(0)
-            file.truncate()
-
-            # Write updated content back to the .gitlab-ci.yml file
-            yaml.dump(ci_content, file, default_flow_style=False)
+            # Write the updated content back to the .gitlab-ci.yml file
+            with open(gitlab_ci_file, 'w') as file:
+                for line_number in sorted(ci_content.keys()):
+                    file.write(ci_content[line_number] + '\n')
             print(f"Updated .gitlab-ci.yml in project {project_dir}")
+
     else:
         print(f".gitlab-ci.yml not found in project {project_dir}")
