@@ -28,15 +28,20 @@ for project_dir in os.listdir(projects_directory):
         with open(gitlab_ci_file, 'r') as file:
             original_content = file.read()
 
-        # Find the last index of "---" to ensure appending the new content at the end
-        last_separator_index = original_content.rfind('---')
+        # Parse the existing YAML content
+        existing_content = yaml.safe_load(original_content)
 
-        # If there's no "---", we assume it's an empty YAML file
-        if last_separator_index == -1:
-            updated_content = original_content.strip() + '\n' + content_to_add.strip()
-        else:
-            # Insert the new content after the last "---"
-            updated_content = original_content[:last_separator_index].strip() + '\n' + content_to_add.strip() + '\n' + original_content[last_separator_index:].strip()
+        # Update existing blocks or add them if they don't exist
+        for block_name, block_content in yaml.safe_load(content_to_add).items():
+            if block_name in existing_content:
+                # Update existing block
+                existing_content[block_name].update(block_content)
+            else:
+                # Add new block
+                existing_content[block_name] = block_content
+
+        # Convert the updated content back to YAML
+        updated_content = yaml.dump(existing_content, default_flow_style=False)
 
         # Write updated content back to the .gitlab-ci.yml file
         with open(gitlab_ci_file, 'w') as file:
