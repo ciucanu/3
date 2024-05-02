@@ -58,18 +58,11 @@ for project_dir in os.listdir(projects_directory):
                 if not isinstance(include_content, list):
                     include_content = [include_content]
                 # Extend include_content with new items
-                include_content.extend(content_to_add_parsed['include'])
-                # Remove duplicates
-                unique_include_content = []
-                seen = set()
-                for item in include_content:
-                    # Convert dictionary to tuple to make it hashable
-                    item_tuple = tuple(item.items())
-                    if item_tuple not in seen:
-                        unique_include_content.append(item)
-                        seen.add(item_tuple)
+                for new_item in content_to_add_parsed['include']:
+                    if new_item not in include_content:
+                        include_content.append(new_item)
                 # Update 'include' block in ci_content
-                ci_content['include'] = unique_include_content
+                ci_content['include'] = include_content
             else:
                 ci_content['include'] = content_to_add_parsed['include']
 
