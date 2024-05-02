@@ -1,5 +1,6 @@
 import os
 import yaml
+from collections import OrderedDict
 
 # Directory where your projects are located
 projects_directory = "/path/to/projects"
@@ -18,6 +19,9 @@ stages:
   - nexusiq-scan
 """
 
+# Define the blocks to update
+blocks_to_update = ['variables', 'stages', 'include']
+
 # Iterate through each project directory
 for project_dir in os.listdir(projects_directory):
     project_path = os.path.join(projects_directory, project_dir)
@@ -25,34 +29,30 @@ for project_dir in os.listdir(projects_directory):
 
     # Check if .gitlab-ci.yml exists in the project directory
     if os.path.isfile(gitlab_ci_file):
-        with open(gitlab_ci_file, 'r') as file:
+        with open(gitlab_ci_file, 'r+') as file:
             try:
                 ci_content = yaml.safe_load(file)
             except yaml.YAMLError as exc:
                 print(f"Error reading YAML file in project {project_dir}: {exc}")
                 continue
             
-            # Check if 'variables' block exists and update it
-            if 'variables' in ci_content:
-                ci_content['variables'].update(yaml.safe_load(content_to_add)['variables'])
-            else:
-                ci_content['variables'] = yaml.safe_load(content_to_add)['variables']
+            # Update each block
+            for block in blocks_to_update:
+                if block in ci_content:
+                    new_block_content = yaml.safe_load(content_to_add)[block]
+                    # Check if the content already exists before appending
+                    for key, value in new_block_content.items():
+                        if key not in ci_content[block]:
+                            ci_content[block][key] = value
+                else:
+                    ci_content[block] = yaml.safe_load(content_to_add)[block]
 
-            # Check if 'stages' block exists and update it
-            if 'stages' in ci_content:
-                ci_content['stages'].extend(yaml.safe_load(content_to_add)['stages'])
-            else:
-                ci_content['stages'] = yaml.safe_load(content_to_add)['stages']
+            # Reset file pointer to beginning and truncate the file
+            file.seek(0)
+            file.truncate()
 
-            # Check if 'include' block exists and update it
-            if 'include' in ci_content:
-                ci_content['include'].extend(yaml.safe_load(content_to_add)['include'])
-            else:
-                ci_content['include'] = yaml.safe_load(content_to_add)['include']
-
-        # Write updated content back to the .gitlab-ci.yml file
-        with open(gitlab_ci_file, 'w') as file:
-            yaml.dump(ci_content, file)
+            # Write updated content back to the .gitlab-ci.yml file
+            yaml.dump(ci_content, file, default_flow_style=False)
             print(f"Updated .gitlab-ci.yml in project {project_dir}")
     else:
         print(f".gitlab-ci.yml not found in project {project_dir}")
