@@ -1,0 +1,63 @@
+import os
+import yaml
+
+# Directory where your projects are located
+projects_directory = "/path/to/projects"
+
+# Content to add inside existing blocks
+content_to_add = """
+include:
+  - project: zzz
+    file: zzz
+
+variables:
+  nexus_iq_scan_path: .
+  nexus_scan_stage: release
+
+stages:
+  - nexusiq-scan
+"""
+
+# Parse the content to add once, outside the loop
+content_to_add_parsed = yaml.safe_load(content_to_add)
+
+# Iterate through each project directory
+for project_dir in os.listdir(projects_directory):
+    project_path = os.path.join(projects_directory, project_dir)
+    gitlab_ci_file = os.path.join(project_path, ".gitlab-ci.yml")
+
+    try:
+        # Check if .gitlab-ci.yml exists in the project directory
+        if os.path.isfile(gitlab_ci_file):
+            with open(gitlab_ci_file, 'r') as file:
+                original_content = file.read()
+
+            # Parse the existing YAML content
+            existing_content = yaml.safe_load(original_content) or {}
+
+            # Update existing blocks or add them if they don't exist
+            for block_name, block_content in content_to_add_parsed.items():
+                if block_name in existing_content:
+                    if isinstance(existing_content[block_name], list):
+                        # Ensure no duplicates when adding to list
+                        for item in block_content:
+                            if item not in existing_content[block_name]:
+                                existing_content[block_name].append(item)
+                    else:
+                        # Update dictionary
+                        existing_content[block_name].update(block_content)
+                else:
+                    # Add new block
+                    existing_content[block_name] = block_content
+
+            # Convert the updated content back to YAML with original indentation
+            updated_content = yaml.dump(existing_content, default_flow_style=False, sort_keys=False)
+
+            # Write updated content back to the .gitlab-ci.yml file
+            with open(gitlab_ci_file, 'w') as file:
+                file.write(updated_content)
+                print(f"Updated .gitlab-ci.yml in project {project_dir}")
+        else:
+            print(f".gitlab-ci.yml not found in project {project_dir}")
+    except Exception as e:
+        print(f"Error processing {project_dir}: {e}")
