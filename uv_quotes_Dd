@@ -26,7 +26,7 @@ content_to_add_parsed = yaml.safe_load(content_to_add)
 # Custom YAML dumper for handling indentation
 class CustomDumper(yaml.Dumper):
     def increase_indent(self, flow=False, indentless=False):
-        return super (CustomDumper, self).increase_indent(flow, False)
+        return super(CustomDumper, self).increase_indent(flow, False)
 
 # Iterate through each project directory
 for project_dir in os.listdir(projects_directory):
