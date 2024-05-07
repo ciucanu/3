@@ -61,7 +61,7 @@ for project_dir in os.listdir(projects_directory):
                     existing_content[section_name] = section_content
 
             # Convert the updated content back to YAML with original indentation
-            updated_content = yaml.dump(existing_content, Dumper=CustomDumper, default_flow_style=False, sort_keys=False, indent=2, preserve_quotes=True)
+            updated_content = yaml.dump(existing_content, Dumper=CustomDumper, default_flow_style=False, sort_keys=False, indent=2)
 
             # Write updated content back to the .gitlab-ci.yml file
             with open(gitlab_ci_file, 'w') as file:
