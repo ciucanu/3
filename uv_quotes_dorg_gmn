@@ -1,10 +1,11 @@
 import os
 import yaml
+from collections import OrderedDict
 
 # Directory where your projects are located
 projects_directory = "/path/to/projects"
 
-# Content to add inside existing blocks (ensure proper indentation)
+# Content to add inside existing blocks
 content_to_add = """
 include:
   - project: zzz
@@ -21,7 +22,7 @@ stages:
 # Parse the content to add once, outside the loop
 content_to_add_parsed = yaml.safe_load(content_to_add)
 
-# Custom YAML dumper for handling indentation
+# Custom YAML dumper for handling indentation (same as before)
 class CustomDumper(yaml.Dumper):
     def increase_indent(self, flow=False, indentless=False):
         return super(CustomDumper, self).increase_indent(flow, False)
@@ -29,11 +30,6 @@ class CustomDumper(yaml.Dumper):
 # Iterate through each project directory
 for project_dir in os.listdir(projects_directory):
     project_path = os.path.join(projects_directory, project_dir)
-    
-    # Ensure the entry is a directory representing a project
-    if not os.path.isdir(project_path):
-        continue
-    
     gitlab_ci_file = os.path.join(project_path, ".gitlab-ci.yml")
 
     try:
@@ -45,20 +41,17 @@ for project_dir in os.listdir(projects_directory):
             # Parse the existing YAML content
             existing_content = yaml.safe_load(original_content) or {}
 
-            # Update existing blocks or add them if they don't exist
-            for section_name, section_content in content_to_add_parsed.items():
-                if section_name in existing_content:
-                    # If it's a list, ensure no duplicates when adding to it
-                    if isinstance(existing_content[section_name], list):
-                        for item in section_content:
-                            if item not in existing_content[section_name]:
-                                existing_content[section_name].append(item)
-                    else:
-                        # Update dictionary
-                        existing_content[section_name].update(section_content)
+            # Check if the "include" block exists
+            if "include" in existing_content:
+                # If it's a list, append the new content (assuming single entry)
+                if isinstance(existing_content["include"], list):
+                    existing_content["include"].append(content_to_add_parsed["include"][0])
+                # If it's a dictionary (unexpected), skip adding
                 else:
-                    # Add new block
-                    existing_content[section_name] = section_content
+                    pass
+            else:
+                # Add the new "include" block if it doesn't exist
+                existing_content["include"] = content_to_add_parsed["include"]
 
             # Convert the updated content back to YAML with original indentation
             updated_content = yaml.dump(existing_content, Dumper=CustomDumper, default_flow_style=False, sort_keys=False, indent=2)
@@ -69,9 +62,5 @@ for project_dir in os.listdir(projects_directory):
                 print(f"Updated .gitlab-ci.yml in project {project_dir}")
         else:
             print(f".gitlab-ci.yml not found in project {project_dir}")
-    except FileNotFoundError:
-        print(f"FileNotFoundError: .gitlab-ci.yml not found in project {project_dir}")
-    except yaml.YAMLError as e:
-        print(f"YAML Error in project {project_dir}: {e}")
     except Exception as e:
         print(f"Error processing {project_dir}: {e}")
