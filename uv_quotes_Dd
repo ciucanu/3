@@ -25,8 +25,8 @@ content_to_add_parsed = yaml.safe_load(content_to_add)
 
 # Custom YAML dumper for handling indentation
 class CustomDumper(yaml.Dumper):
-  def increase_indent(self, flow=False, indentless=False:
-    return super (CustomDumper, self).increase_indent(flow, False)
+    def increase_indent(self, flow=False, indentless=False):
+        return super (CustomDumper, self).increase_indent(flow, False)
 
 # Iterate through each project directory
 for project_dir in os.listdir(projects_directory):
@@ -58,7 +58,7 @@ for project_dir in os.listdir(projects_directory):
                     existing_content[block_name] = block_content
 
             # Convert the updated content back to YAML with original indentation
-                  updated_content = yaml.dump(existing_content, Dumper=CustomDumper, default_flow_style=False, sort_keys=False, indent=2)
+            updated_content = yaml.dump(existing_content, Dumper=CustomDumper, default_flow_style=False, sort_keys=False, indent=2)
 
             # Write updated content back to the .gitlab-ci.yml file
             with open(gitlab_ci_file, 'w') as file:
