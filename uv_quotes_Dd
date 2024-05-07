@@ -1,3 +1,4 @@
+
 import os
 import yaml
 from collections import OrderedDict
@@ -22,63 +23,48 @@ stages:
 # Parse the content to add once, outside the loop
 content_to_add_parsed = yaml.safe_load(content_to_add)
 
+# Custom YAML dumper for handling indentation
+class CustomDumper(yaml.Dumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super(CustomDumper, self).increase_indent(flow, False)
 
 # Iterate through each project directory
 for project_dir in os.listdir(projects_directory):
-  project_path = os.path.join(projects_directory, project_dir)
-  gitlab_ci_file = os.path.join(project_path, ".gitlab-ci.yml")
+    project_path = os.path.join(projects_directory, project_dir)
+    gitlab_ci_file = os.path.join(project_path, ".gitlab-ci.yml")
 
-  try:
-    # Check if .gitlab-ci.yml exists in the project directory
-    if os.path.isfile(gitlab_ci_file):
-      with open(gitlab_ci_file, 'r') as file:
-        original_content = file.read()
+    try:
+        # Check if .gitlab-ci.yml exists in the project directory
+        if os.path.isfile(gitlab_ci_file):
+            with open(gitlab_ci_file, 'r') as file:
+                original_content = file.read()
 
-      existing_content = yaml.safe_load(original_content) or {}
+            # Parse the existing YAML content
+            existing_content = yaml.safe_load(original_content) or {}
 
-      # Update existing blocks or add them if they don't exist
-      for block_name, block_content in content_to_add_parsed.items():
-        # Check if key needs quotes (special characters or spaces)
-        if not block_name.isidentifier():
-          block_name = f'"{block_name}"'
+            # Update existing blocks or add them if they don't exist
+            for block_name, block_content in content_to_add_parsed.items():
+                if block_name in existing_content:
+                    if isinstance(existing_content[block_name], list):
+                        # Ensure no duplicates when adding to list
+                        for item in block_content:
+                            if item not in existing_content[block_name]:
+                                existing_content[block_name].append(item)
+                    else:
+                        # Update dictionary
+                        existing_content[block_name].update(block_content)
+                else:
+                    # Add new block
+                    existing_content[block_name] = block_content
 
-        # Check if each value in content needs quotes
-        if isinstance(block_content, dict):
-          for key, value in block_content.items():
-            if not key.isidentifier():
-              key = f'"{key}"'
-            if not isinstance(value, (str, bool, int, float)):
-              value = yaml.dump(value)  # Dump complex values as YAML strings
-            block_content[key] = value
-        elif isinstance(block_content, list):
-          for i, item in enumerate(block_content):
-            if not isinstance(item, (str, bool, int, float)):
-              item = yaml.dump(item)  # Dump complex values as YAML strings
-            block_content[i] = item
+            # Convert the updated content back to YAML with original indentation
+            updated_content = yaml.dump(existing_content, Dumper=CustomDumper, default_flow_style=False, sort_keys=False, indent=2)
+
+            # Write updated content back to the .gitlab-ci.yml file
+            with open(gitlab_ci_file, 'w') as file:
+                file.write(updated_content)
+                print(f"Updated .gitlab-ci.yml in project {project_dir}")
         else:
-          if not isinstance(block_content, (str, bool, int, float)):
-            block_content = yaml.dump(block_content)  # Dump complex values as YAML strings
-
-        if block_name in existing_content:
-          if isinstance(existing_content[block_name], list):
-            # Ensure no duplicates when adding to list
-            for item in block_content:
-              if item not in existing_content[block_name]:
-                existing_content[block_name].append(item)
-          else:
-            # Update dictionary
-            existing_content[block_name].update(block_content)
-        else:
-          # Add new block
-          existing_content[block_name] = block_content
-
-      # Convert the updated content back to YAML with original indentation
-      updated_content = yaml.dump(existing_content, indent=2)  # Set indentation
-
-      with open(gitlab_ci_file, 'w') as file:
-        file.write(updated_content)
-        print(f"Updated .gitlab-ci.yml in project {project_dir}")
-    else:
-      print(f".gitlab-ci.yml not found in project {project_dir}")
-  except Exception as e:
-    print(f"Error processing {project_dir}: {e}")
+            print(f".gitlab-ci.yml not found in project {project_dir}")
+    except Exception as e:
+        print(f"Error processing {project_dir}: {e}")
