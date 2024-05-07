@@ -1,6 +1,5 @@
 import os
 import yaml
-from collections import OrderedDict
 
 # Directory where your projects are located
 projects_directory = "/path/to/projects"
@@ -30,6 +29,11 @@ class CustomDumper(yaml.Dumper):
 # Iterate through each project directory
 for project_dir in os.listdir(projects_directory):
     project_path = os.path.join(projects_directory, project_dir)
+    
+    # Ensure the entry is a directory representing a project
+    if not os.path.isdir(project_path):
+        continue
+    
     gitlab_ci_file = os.path.join(project_path, ".gitlab-ci.yml")
 
     try:
@@ -42,19 +46,19 @@ for project_dir in os.listdir(projects_directory):
             existing_content = yaml.safe_load(original_content) or {}
 
             # Update existing blocks or add them if they don't exist
-            for block_name, block_content in content_to_add_parsed.items():
-                if block_name in existing_content:
-                    if isinstance(existing_content[block_name], list):
-                        # Ensure no duplicates when adding to list (consider using set)
-                        for item in block_content:
-                            if item not in existing_content[block_name]:
-                                existing_content[block_name].append(item)
+            for section_name, section_content in content_to_add_parsed.items():
+                if section_name in existing_content:
+                    # If it's a list, ensure no duplicates when adding to it
+                    if isinstance(existing_content[section_name], list):
+                        for item in section_content:
+                            if item not in existing_content[section_name]:
+                                existing_content[section_name].append(item)
                     else:
                         # Update dictionary
-                        existing_content[block_name].update(block_content)
+                        existing_content[section_name].update(section_content)
                 else:
                     # Add new block
-                    existing_content[block_name] = block_content
+                    existing_content[section_name] = section_content
 
             # Convert the updated content back to YAML with original indentation
             updated_content = yaml.dump(existing_content, Dumper=CustomDumper, default_flow_style=False, sort_keys=False, indent=2, preserve_quotes=True)
@@ -65,5 +69,9 @@ for project_dir in os.listdir(projects_directory):
                 print(f"Updated .gitlab-ci.yml in project {project_dir}")
         else:
             print(f".gitlab-ci.yml not found in project {project_dir}")
+    except FileNotFoundError:
+        print(f"FileNotFoundError: .gitlab-ci.yml not found in project {project_dir}")
+    except yaml.YAMLError as e:
+        print(f"YAML Error in project {project_dir}: {e}")
     except Exception as e:
         print(f"Error processing {project_dir}: {e}")
