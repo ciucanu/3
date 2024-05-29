@@ -1,6 +1,7 @@
 ---
 - name: Replace values in files
   hosts: localhost
+  gather_facts: no
   vars:
     paths:
       - '/path/to/file*'
@@ -14,16 +15,21 @@
 
   tasks:
     - name: Find files matching pattern
-      find:
-        paths: "{{ paths }}"
-        recurse: yes
+      shell: |
+        find {{ item }} -type f
       register: found_files
+      with_items: "{{ paths }}"
+      changed_when: false
+
+    - name: Combine file lists
+      set_fact:
+        all_files: "{{ all_files | default([]) + found_files.results | map(attribute='stdout_lines') | flatten }}"
 
     - name: Replace values in files
       replace:
-        path: '{{ item.0.path }}'
+        path: '{{ item.0 }}'
         regexp: '{{ lookup("regex_escape", item.1.key) }}'
         replace: '{{ item.1.value }}'
-      loop: '{{ found_files.files | product(replacements | dict2items) | list }}'
+      loop: '{{ all_files | product(replacements | dict2items) | list }}'
       loop_control:
-        label: '{{ item.0.path }} -> {{ item.1.key }}'
+        label: '{{ item.0 }} -> {{ item.1.key }}'
