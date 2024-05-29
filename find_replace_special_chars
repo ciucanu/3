@@ -25,18 +25,11 @@
       set_fact:
         all_files: "{{ all_files | default([]) + found_files.results | map(attribute='stdout_lines') | flatten }}"
 
-    - name: Escape special characters in replacements
-      set_fact:
-        escaped_replacements: >-
-          {{
-            replacements | map('regex_escape') | items2dict
-          }}
-
     - name: Replace values in files
       replace:
         path: '{{ item.0 }}'
-        regexp: '{{ item.1.key }}'
+        regexp: '{{ item.1.key | regex_escape }}'
         replace: '{{ item.1.value }}'
-      loop: '{{ all_files | product(escaped_replacements | dict2items) | list }}'
+      loop: "{{ all_files | product(replacements | dict2items) | list }}"
       loop_control:
         label: '{{ item.0 }} -> {{ item.1.key }}'
