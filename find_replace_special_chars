@@ -1,0 +1,35 @@
+---
+- name: Replace values in files
+  hosts: localhost
+  vars:
+    paths:
+      - '/path/to/file*'
+    replacements:
+      'old$value1': 'new$value1'
+      'old%value2': 'new%value2'
+      'old?value3': 'new?value3'
+      'old~value4': 'new~value4'
+      'old!value5': 'new!value5'
+      'old#value6': 'new#value6'
+
+  tasks:
+    - name: Find files matching pattern
+      find:
+        paths: "{{ paths }}"
+        recurse: yes
+      register: found_files
+
+    - name: Replace values in files
+      replace:
+        path: '{{ item.path }}'
+        regexp: '{{ lookup("regex_escape", item_key) }}'
+        replace: '{{ item_value }}'
+      loop: '{{ found_files.files }}'
+      vars:
+        replacements_dict: '{{ replacements | dict2items }}'
+      with_subelements:
+        - '{{ replacements_dict }}'
+        - key
+        - value
+      loop_control:
+        loop_var: item
