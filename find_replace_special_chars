@@ -21,15 +21,9 @@
 
     - name: Replace values in files
       replace:
-        path: '{{ item.path }}'
-        regexp: '{{ lookup("regex_escape", item_key) }}'
-        replace: '{{ item_value }}'
-      loop: '{{ found_files.files }}'
-      vars:
-        replacements_dict: '{{ replacements | dict2items }}'
-      with_subelements:
-        - '{{ replacements_dict }}'
-        - key
-        - value
+        path: '{{ item.0.path }}'
+        regexp: '{{ lookup("regex_escape", item.1.key) }}'
+        replace: '{{ item.1.value }}'
+      loop: '{{ found_files.files | product(replacements | dict2items) | list }}'
       loop_control:
-        loop_var: item
+        label: '{{ item.0.path }} -> {{ item.1.key }}'
