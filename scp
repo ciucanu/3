@@ -1,0 +1,21 @@
+---
+- name: Fetch and copy data from node2 to node3
+  hosts: node1
+  tasks:
+    - name: Fetch data from node2 to node1
+      fetch:
+        src: /path/to/source/file
+        dest: /tmp/
+        flat: yes
+      delegate_to: node2
+
+    - name: Copy data from node1 to node3
+      copy:
+        src: /tmp/file
+        dest: /path/to/destination/
+      delegate_to: node3
+
+    - name: Clean up fetched file on node1
+      file:
+        path: /tmp/file
+        state: absent
