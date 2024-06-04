@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+
+import os
+
+# Path to the folder containing gitlab repositories
+base_path = '/app/cloudera/tmp/gitlab2/'
+
+# Content to be appended/updated
+include_content = "\ninclude:\n  - project: 'zzz'\n    file: 'zzz'\n"
+variables_content = "  nexus_iq_scan_path: .\n  nexus_scan_stage: release\n"
+stages_content = "  - nexusiq-scan\n"
+
+def update_yaml(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    updated_lines = []
+    in_variables = False
+    in_stages = False
+    variables_updated = False
+    stages_updated = False
+    include_updated = False
+
+    for line in lines:
+        if line.strip().startswith("variables:"):
+            in_variables = True
+            updated_lines.append(line)
+            continue
+
+        if in_variables and (line.startswith("  ") and not line.lstrip().startswith('-')):
+            updated_lines.append(line)
+            if 'nexus_iq_scan_path' in line or 'nexus_scan_stage' in line:
+                variables_updated = True
+            continue
+        elif in_variables:
+            if not variables_updated:
+                updated_lines.append(variables_content)
+            in_variables = False
+
+        if line.strip().startswith("stages:"):
+            in_stages = True
+            updated_lines.append(line)
+            continue
+
+        if in_stages and (line.startswith("  ") and not line.lstrip().startswith('-')):
+            updated_lines.append(line)
+            if 'nexusiq-scan' in line:
+                stages_updated = True
+            continue
+        elif in_stages:
+            if not stages_updated:
+                updated_lines.append(stages_content)
+            in_stages = False
+
+        if 'include' in line:
+            updated_lines.append(line)
+            if 'project: \'zzz\'' in line or 'file: \'zzz\'' in line:
+                include_updated = True
+            continue
+
+        updated_lines.append(line)
+
+    if not variables_updated:
+        updated_lines.append("variables:\n" + variables_content)
+
+    if not stages_updated:
+        updated_lines.append("stages:\n" + stages_content)
+
+    if not include_updated:
+        updated_lines.append(include_content)
+
+    with open(file_path, 'w') as file:
+        file.writelines(updated_lines)
+
+def scan_and_update(path):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if file == '.gitlab-ci.yml':
+                file_path = os.path.join(root, file)
+                update_yaml(file_path)
+
+if __name__ == "__main__":
+    scan_and_update(base_path)
