@@ -28,9 +28,13 @@ class CustomDumper(yaml.SafeDumper):
         return super(CustomDumper, self).increase_indent(flow, False)
 
 def str_presenter(dumper, data):
-    # Preserve quotes
-    if data.startswith("-Dorg"):
+    # Preserve quotes if they exist
+    if data.startswith('"') and data.endswith('"'):
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
+    if data.startswith("'") and data.endswith("'"):
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style="'")
+    if data.startswith("-D"):
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data)
     if "\n" in data:
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
     if any(char in data for char in ":{}[]&,*#?|-<>=!%@`") or data != data.strip():
