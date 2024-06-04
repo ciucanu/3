@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 import argparse
 import yaml
 
 def compare_gitlab_ci_files(file1, file2):
-    """Compares two .gitlab-ci.yml files and prints the differences.
+    """Compares two .gitlab-ci.yml files and prints differences in a git diff-like format.
 
     Args:
         file1 (str): Path to the first file.
@@ -13,18 +14,32 @@ def compare_gitlab_ci_files(file1, file2):
         data1 = yaml.safe_load(f1)
         data2 = yaml.safe_load(f2)
 
-    # Get unique keys from both files
     all_keys = set(data1.keys()) | set(data2.keys())
 
     for key in all_keys:
         if key not in data1:
-            print(f"- Key '{key}' missing in {file1}")
+            print(f"diff --git a/{file1} b/{file2}")
+            print(f"index 0000000..0000000 100644")
+            print(f"--- a/{file1}")
+            print(f"+++ b/{file2}")
+            print(f"-{key}: ")  # Removed in file1
+            print(f"+{key}: {data2[key]}")
         elif key not in data2:
-            print(f"- Key '{key}' missing in {file2}")
+            print(f"diff --git a/{file1} b/{file2}")
+            print(f"index 0000000..0000000 100644")
+            print(f"--- a/{file1}")
+            print(f"+++ b/{file2}")
+            print(f"-{key}: {data1[key]}")  # Removed in file2
+            print(f"+{key}: ")
         elif data1[key] != data2[key]:
-            print(f"- Values differ for key '{key}':")
-            print(f"  - {file1}: {data1[key]}")
-            print(f"  - {file2}: {data2[key]}")
+            print(f"diff --git a/{file1} b/{file2}")
+            print(f"index 0000000..0000000 100644")
+            print(f"--- a/{file1}")
+            print(f"+++ b/{file2}")
+            print(f"-{key}: {data1[key]}")
+            print(f"+{key}: {data2[key]}")
+
+        print("\n")  # Add empty line between changes
 
 def main():
     parser = argparse.ArgumentParser(description="Compare .gitlab-ci.yml files")
