@@ -13,11 +13,20 @@ new_content = {
     'stages': ['nexusiq-scan']
 }
 
+# Custom YAML Dumper
+class NoSortDumper(yaml.SafeDumper):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_representer(dict, type(self).represent_dict)
+
+    def represent_dict(self, data):
+        return self.represent_mapping('tag:yaml.org,2002:map', data.items())
+
 def update_yaml(file_path):
     with open(file_path, 'r') as file:
         content = yaml.safe_load(file)
 
-    # Update 'include' block
+    # Update 'include' block (same as before)
     if 'include' in content:
         if isinstance(content['include'], list):
             content['include'].append(new_content['include'][0])
@@ -26,20 +35,20 @@ def update_yaml(file_path):
     else:
         content['include'] = new_content['include']
 
-    # Update 'variables' block
+    # Update 'variables' block (same as before)
     if 'variables' in content:
         content['variables'].update(new_content['variables'])
     else:
         content['variables'] = new_content['variables']
 
-    # Update 'stages' block
+    # Update 'stages' block (same as before)
     if 'stages' in content:
         content['stages'].extend(stage for stage in new_content['stages'] if stage not in content['stages'])
     else:
         content['stages'] = new_content['stages']
 
     with open(file_path, 'w') as file:
-        yaml.dump(content, file, default_flow_style=False)
+        yaml.dump(content, file, Dumper=NoSortDumper, default_flow_style=False)  # Use custom dumper
 
 def scan_and_update(path):
     for root, dirs, files in os.walk(path):
