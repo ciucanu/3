@@ -6,7 +6,7 @@ import os
 base_path = '/app/cloudera/tmp/gitlab2/'
 
 # Content to be appended/updated
-include_content = "\ninclude:\n  - project: 'zzz'\n    file: 'zzz'\n"
+include_content = "  - project: 'zzz'\n    file: 'zzz'\n"
 variables_content = "  nexus_iq_scan_path: .\n  nexus_scan_stage: release\n"
 stages_content = "  - nexusiq-scan\n"
 
@@ -14,60 +14,70 @@ def update_yaml(file_path):
     with open(file_path, 'r') as file:
         lines = file.readlines()
 
-    updated_lines = []
-    in_variables = False
-    in_stages = False
+    include_found = False
+    variables_found = False
+    stages_found = False
+
+    include_updated = False
     variables_updated = False
     stages_updated = False
-    include_updated = False
+
+    updated_lines = []
+    in_block = None
 
     for line in lines:
-        if line.strip().startswith("variables:"):
-            in_variables = True
+        stripped_line = line.strip()
+
+        if stripped_line.startswith("include:"):
+            include_found = True
+            in_block = 'include'
+            updated_lines.append(line)
+            continue
+        elif stripped_line.startswith("variables:"):
+            variables_found = True
+            in_block = 'variables'
+            updated_lines.append(line)
+            continue
+        elif stripped_line.startswith("stages:"):
+            stages_found = True
+            in_block = 'stages'
             updated_lines.append(line)
             continue
 
-        if in_variables and (line.startswith("  ") and not line.lstrip().startswith('-')):
-            updated_lines.append(line)
-            if 'nexus_iq_scan_path' in line or 'nexus_scan_stage' in line:
-                variables_updated = True
-            continue
-        elif in_variables:
+        if in_block == 'include' and not stripped_line.startswith("- project:"):
+            if not include_updated:
+                updated_lines.append(include_content)
+                include_updated = True
+            in_block = None
+
+        if in_block == 'variables' and not stripped_line.startswith("nexus_iq_scan_path") and not stripped_line.startswith("nexus_scan_stage"):
             if not variables_updated:
                 updated_lines.append(variables_content)
-            in_variables = False
+                variables_updated = True
+            in_block = None
 
-        if line.strip().startswith("stages:"):
-            in_stages = True
-            updated_lines.append(line)
-            continue
-
-        if in_stages and (line.startswith("  ") and not line.lstrip().startswith('-')):
-            updated_lines.append(line)
-            if 'nexusiq-scan' in line:
-                stages_updated = True
-            continue
-        elif in_stages:
+        if in_block == 'stages' and not stripped_line.startswith("- nexusiq-scan"):
             if not stages_updated:
                 updated_lines.append(stages_content)
-            in_stages = False
-
-        if 'include' in line:
-            updated_lines.append(line)
-            if 'project: \'zzz\'' in line or 'file: \'zzz\'' in line:
-                include_updated = True
-            continue
+                stages_updated = True
+            in_block = None
 
         updated_lines.append(line)
 
-    if not variables_updated:
-        updated_lines.append("variables:\n" + variables_content)
-
-    if not stages_updated:
-        updated_lines.append("stages:\n" + stages_content)
-
-    if not include_updated:
+    if not include_found:
+        updated_lines.append("include:\n" + include_content)
+    elif not include_updated:
         updated_lines.append(include_content)
+
+    if not variables_found:
+        updated_lines.append("variables:\n" + variables_content)
+    elif not variables_updated:
+        updated_lines.append(variables_content)
+
+    if not stages_found:
+        updated_lines.append("stages:\n" + stages_content)
+    elif not stages_updated:
+        updated_lines.append(stages_content)
 
     with open(file_path, 'w') as file:
         file.writelines(updated_lines)
@@ -77,6 +87,7 @@ def scan_and_update(path):
         for file in files:
             if file == '.gitlab-ci.yml':
                 file_path = os.path.join(root, file)
+                print(f"Processing: {file_path}")
                 update_yaml(file_path)
 
 if __name__ == "__main__":
