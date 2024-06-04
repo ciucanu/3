@@ -23,7 +23,7 @@ stages:
 content_to_add_parsed = yaml.safe_load(content_to_add)
 
 # Custom YAML dumper for handling indentation and preserving quotes
-class CustomDumper(yaml.Dumper):
+class CustomDumper(yaml.SafeDumper):
     def increase_indent(self, flow=False, indentless=False):
         return super(CustomDumper, self).increase_indent(flow, False)
 
@@ -31,9 +31,9 @@ def str_presenter(dumper, data):
     # Preserve quotes
     if data.startswith("-Dorg"):
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
-    if "\n" in data or data.startswith(" ") or data.endswith(" "):
+    if "\n" in data:
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
-    if any(char in data for char in ":{}[]&,*#?|-<>=!%@`"):
+    if any(char in data for char in ":{}[]&,*#?|-<>=!%@`") or data != data.strip():
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
     return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
