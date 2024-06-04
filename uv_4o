@@ -3,7 +3,7 @@ import yaml
 from collections import OrderedDict
 
 # Directory where your projects are located
-projects_directory = "/path/to/projects"
+projects_directory = "/app/cloudera/tmp/gitlab2"
 
 # Content to add inside existing blocks
 content_to_add = """
@@ -33,6 +33,7 @@ def str_presenter(dumper, data):
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
     if data.startswith("'") and data.endswith("'"):
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style="'")
+    # Preserve -D entries without adding new lines or escape characters
     if data.startswith("-D"):
         return dumper.represent_scalar('tag:yaml.org,2002:str', data)
     if "\n" in data:
