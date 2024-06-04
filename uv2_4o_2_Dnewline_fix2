@@ -26,12 +26,12 @@ def update_yaml(file_path):
             updated_lines.append(line)
             continue
         
-        if in_variables and (line.startswith("  ") and not line.lstrip().startswith('-')):
+        if in_variables and line.startswith("  ") and not line.lstrip().startswith('-'):
             updated_lines.append(line)
             continue
         elif in_variables:
             if not variables_updated:
-                updated_lines.append(variables_content)
+                updated_lines.append(f"  {variables_content.strip()}\n")
                 variables_updated = True
             in_variables = False
         
@@ -40,22 +40,22 @@ def update_yaml(file_path):
             updated_lines.append(line)
             continue
         
-        if in_stages and (line.startswith("  ") and not line.lstrip().startswith('-')):
+        if in_stages and line.startswith("  ") and not line.lstrip().startswith('-'):
             updated_lines.append(line)
             continue
         elif in_stages:
             if not stages_updated:
-                updated_lines.append(stages_content)
+                updated_lines.append(f"  {stages_content.strip()}\n")
                 stages_updated = True
             in_stages = False
         
         updated_lines.append(line)
 
     if not variables_updated:
-        updated_lines.append("variables:\n" + variables_content)
+        updated_lines.append(f"variables:\n  {variables_content.strip()}\n")
     
     if not stages_updated:
-        updated_lines.append("stages:\n" + stages_content)
+        updated_lines.append(f"stages:\n  {stages_content.strip()}\n")
     
     updated_lines.append(include_content)
 
