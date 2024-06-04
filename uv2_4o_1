@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+
+import os
+import yaml
+
+# Path to the folder containing gitlab repositories
+base_path = '/app/cloudera/tmp/gitlab2/'
+
+# Content to be appended/updated
+new_content = {
+    'include': [{'project': 'zzz', 'file': 'zzz'}],
+    'variables': {'nexus_iq_scan_path': '.', 'nexus_scan_stage': 'release'},
+    'stages': ['nexusiq-scan']
+}
+
+def update_yaml(file_path):
+    with open(file_path, 'r') as file:
+        content = yaml.safe_load(file)
+
+    # Update 'include' block
+    if 'include' in content:
+        if isinstance(content['include'], list):
+            content['include'].append(new_content['include'][0])
+        else:
+            content['include'] = [content['include'], new_content['include'][0]]
+    else:
+        content['include'] = new_content['include']
+
+    # Update 'variables' block
+    if 'variables' in content:
+        content['variables'].update(new_content['variables'])
+    else:
+        content['variables'] = new_content['variables']
+
+    # Update 'stages' block
+    if 'stages' in content:
+        content['stages'].extend(stage for stage in new_content['stages'] if stage not in content['stages'])
+    else:
+        content['stages'] = new_content['stages']
+
+    with open(file_path, 'w') as file:
+        yaml.dump(content, file, default_flow_style=False)
+
+def scan_and_update(path):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if file == '.gitlab-ci.yml':
+                file_path = os.path.join(root, file)
+                update_yaml(file_path)
+
+if __name__ == "__main__":
+    scan_and_update(base_path)
