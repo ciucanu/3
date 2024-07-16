@@ -7,8 +7,8 @@ host = 'your_postgres_server'
 port = '5432'
 database = 'your_db'
 
-# Create the database URL using pg8000
-DATABASE_URL = f"postgresql+pg8000://{username}:{password}@{host}:{port}/{database}"
+# Create the database URL using pg8000 with SSL configuration
+DATABASE_URL = f"postgresql+pg8000://{username}:{password}@{host}:{port}/{database}?sslmode=require"
 
 # Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
